@@ -22,10 +22,6 @@ namespace Ticketing.Infrastructure.Persistence
                 .HasConversion<byte>();
 
             modelBuilder.Entity<Ticket>()
-                .Property(b => b.Id)
-                .HasDefaultValueSql("NEWID()");
-
-            modelBuilder.Entity<Ticket>()
                 .Property(p => p.Status)
                 .HasDefaultValue(TicketStatus.Open);
 

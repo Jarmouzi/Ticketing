@@ -9,17 +9,7 @@ using Ticketing.Domain.Entities;
 namespace Ticketing.Application.DTOs
 {
     public class TicketDto
-    {
-        private string v;
-
-        public TicketDto(Guid id, string title, string v, DateTime createdAt)
-        {
-            Id = id;
-            Title = title;
-            this.v = v;
-            CreatedAt = createdAt;
-        }
-
+    {      
         public Guid Id { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }

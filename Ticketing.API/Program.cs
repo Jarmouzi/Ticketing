@@ -12,6 +12,7 @@ using Ticketing.API.Middlewares;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddAutoMapper(cfg => { }, typeof(TicketProfile).Assembly);
 Batteries.Init();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAppServices(builder.Configuration.GetConnectionString("DefaultConnection"));
 

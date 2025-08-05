@@ -4,11 +4,12 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Ticketing.Application.Interfaces;
 using Ticketing.Domain.Entities;
 
 namespace Ticketing.Application.Services
 {
-    public class JwtService
+    public class JwtService: IJWTService
     {
         private readonly string _secretKey;
         private readonly string _issuer;

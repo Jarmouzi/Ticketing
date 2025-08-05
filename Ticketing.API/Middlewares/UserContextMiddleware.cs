@@ -27,12 +27,7 @@ namespace Ticketing.API.Middlewares
                 context.Items["UserId"] = userId;
                 context.Items["UserRole"] = context.User.FindFirst(ClaimTypes.Role)?.Value;
             }
-            else
-            {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsync("Unauthorized: User not authenticated.");
-                return;
-            }
+
             await _next(context);
         }
     }

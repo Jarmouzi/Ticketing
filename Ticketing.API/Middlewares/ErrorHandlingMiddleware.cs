@@ -11,7 +11,7 @@
             {
                 await _next(context);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 context.Response.StatusCode = 400; 
                 await context.Response.WriteAsync("An error occurred.");

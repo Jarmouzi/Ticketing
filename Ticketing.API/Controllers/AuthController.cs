@@ -2,8 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using Ticketing.Application.DTOs;
-using Ticketing.Application.Services;
-using Ticketing.Repository;
+using Ticketing.Application.Interfaces;
 
 namespace Ticketing.API.Controllers
 {
@@ -12,9 +11,9 @@ namespace Ticketing.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
-        private readonly JwtService _jwtService;
+        private readonly IJWTService _jwtService;
 
-        public AuthController(IAuthService authService, JwtService jwtService)
+        public AuthController(IAuthService authService, IJWTService jwtService)
         {
             _authService = authService;
             _jwtService = jwtService;

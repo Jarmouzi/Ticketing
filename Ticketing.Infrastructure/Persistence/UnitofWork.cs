@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Ticketing.Domain.Entities;
-using Ticketing.Domain.Interfaces;
 using Ticketing.Domain.ValueObjects;
 using Ticketing.Infrastructure.interfaces;
 using Ticketing.Infrastructure.Repositories;
@@ -17,13 +16,11 @@ namespace Ticketing.Infrastructure.Persistence
     {
         private readonly TicketingDBContext _context;
         private Dictionary<Type, object> _repositories;
-        private readonly IUserContext _userContext;
 
-        public UnitOfWork(TicketingDBContext context, IUserContext userContext)
+        public UnitOfWork(TicketingDBContext context)
         {
             _context = context;
             _repositories = new Dictionary<Type, object>();
-            _userContext = userContext; 
         }
 
         public void Dispose()
@@ -47,9 +44,6 @@ namespace Ticketing.Infrastructure.Persistence
                 if (entityEntry.State == EntityState.Added)
                 {
                     ((BaseEntity)entityEntry.Entity).CreatedAt = DateTime.UtcNow;
-
-                    if(_userContext.UserId.HasValue)
-                        ((BaseEntity)entityEntry.Entity).CreatedByUserId = _userContext.UserId.Value;
                 }
                 ((BaseEntity)entityEntry.Entity).UpdatedAt = DateTime.UtcNow;
             }

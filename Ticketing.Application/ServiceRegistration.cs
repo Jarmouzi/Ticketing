@@ -7,6 +7,7 @@ using Ticketing.Application.Services;
 using Ticketing.Domain.ValueObjects;
 using Ticketing.Infrastructure.interfaces;
 using Ticketing.Infrastructure.Persistence;
+using Ticketing.Infrastructure.Repositories;
 using Ticketing.Repository;
 
 namespace Ticketing.Application
@@ -21,12 +22,13 @@ namespace Ticketing.Application
                 options.UseSqlite(connectionStringConfigName);
             });
 
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IAuthRepository, AuthRepository>();
+            services.AddScoped<ITicketRepository, TicketRepository>();
 
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITicketService, TicketService>();
-
-            services.AddScoped<JwtService>();
+            services.AddScoped<IJWTService, JwtService>();
 
             return services;
         }

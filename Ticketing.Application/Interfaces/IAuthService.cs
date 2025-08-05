@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Ticketing.Domain.Entities;
 using Ticketing.Domain.ValueObjects;
 
-namespace Ticketing.Repository
+namespace Ticketing.Application.Interfaces
 {
     public interface IAuthService
     {
