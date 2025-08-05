@@ -1,10 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Diagnostics.Metrics;
 using System.Security.Claims;
-using Ticketing.DTO;
-using Ticketing.Model;
+using Ticketing.Application.DTOs;
+using Ticketing.Application.Interfaces;
+using Ticketing.Domain.ValueObjects;
 using Ticketing.Repository;
 
 namespace Ticketing.API.Controllers
@@ -13,118 +12,66 @@ namespace Ticketing.API.Controllers
     [Route("tickets")]
     public class TicketsController : ControllerBase
     {
-        private readonly ITicketRepository _TicketRepository;
-        private readonly IAuthRepository _AuthRepository;
+        private readonly ITicketService _TicketService;
+        private readonly IAuthService _authService;
 
-        public TicketsController(ITicketRepository ticketRepository, IAuthRepository authRepository)
+        public TicketsController(ITicketService ticketService, IAuthService authService)
         {
-            _TicketRepository = ticketRepository;
-            _AuthRepository = authRepository;
+            _TicketService = ticketService;
+            _authService = authService;
         }
 
         [Authorize(Roles = "Employee")]
         [HttpPost]
         public async Task<IActionResult> CreateTicket(TicketCreateDto dto)
         {
-            try
-            {
-                Guid userId;
-                if (!Guid.TryParse(User.FindFirst("id")?.Value, out userId))
-                    return Unauthorized();
+            var userId = (Guid)HttpContext.Items["UserId"];
 
-                var ticket = new Ticket
-                {
-                    Id = Guid.NewGuid(),
-                    Title = dto.Title,
-                    Description = dto.Description,
-                    Priority = dto.Priority,
-                    Status = TicketStatus.Open,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    CreatedByUserId = userId
-                };
+            var result = await _TicketService.CreateTicketAsync(dto, userId);
 
-                var result = await _TicketRepository.AddAsync(ticket);
-
-                return Ok(new { data = result, message = $" Ticket {result.Title} updated successfully" });
-
-            }
-            catch (Exception)
-            {
-                return BadRequest();
-            }
+            return Ok(new { data = result, message = $" Ticket {result.Title} updated successfully" });
         }
 
         [Authorize(Roles = "Employee")]
         [HttpGet("my")]
         public async Task<IActionResult> MyTickets()
         {
-            try
-            {
-                Guid userId;
-                if (!Guid.TryParse(User.FindFirst("id")?.Value, out userId))
-                    return Unauthorized();
+            var userId = (Guid)HttpContext.Items["UserId"];
 
-                var result = await _TicketRepository.GetAllAsync(m => m.CreatedByUserId == userId);
+            var result = await _TicketService.GetTicketsByUserAsync(userId);
 
-                return Ok(result);
-
-            }
-            catch (Exception)
-            {
-                return BadRequest();
-            }
+            return Ok(result);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            try
-            {
+            var result = await _TicketService.GetAllTicketsAsync();
 
-                var result = await _TicketRepository.GetAllAsync();
-
-                return Ok(result);
-
-            }
-            catch (Exception)
-            {
-                return BadRequest();
-            }
+            return Ok(result);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        
+
         public async Task<IActionResult> Update(Guid id, TicketUpdateDto dto)
         {
-            try
-            {
-                var assignedUser = await _AuthRepository.GetUserAsync(dto.AssignedToUserId);
+            var assignedUser = await _authService.GetUserAsync(dto.AssignedToUserId);
 
-                if (assignedUser == null)
-                    return NotFound(new { data = dto, message = "Assigned User not found!" });
+            if (assignedUser == null)
+                return NotFound(new { data = dto, message = "Assigned User not found!" });
 
-                if(assignedUser.Role != UserRole.Admin)
-                    return Unauthorized(new { data = dto, message = "Assigned User is not admin! Tickets should only assigned to admins." });
+            if (assignedUser.Role != UserRole.Admin)
+                return Unauthorized(new { data = dto, message = "Assigned User is not admin! Tickets should only assigned to admins." });
 
+            var result = await _TicketService.UpdateStatusAsync(id, dto);
 
-                var ticket = await _TicketRepository.GetByIdAsync(id);
-                if (ticket == null) return NotFound(new { data = dto, message = "Ticket not found!" });
+            if (result == null)
+                return NotFound(new { data = dto, message = "Ticket not found!" });
 
+            return Ok(new { data = result, message = $" Ticket {result.Title} updated successfully" });
 
-                ticket.Status = dto.Status;
-                ticket.AssignedToUserId = dto.AssignedToUserId;
-
-                var result = await _TicketRepository.UpdateAsync(ticket);
-                return Ok(new { data = result, message = $" Ticket {result.Title} updated successfully" });
-
-            }
-            catch (Exception)
-            {
-                return BadRequest();
-            }
         }
 
         [Authorize(Roles = "Admin")]
@@ -132,60 +79,36 @@ namespace Ticketing.API.Controllers
         //Show ticket counts by status(Admin only)
         public async Task<IActionResult> Stats()
         {
-            try
-            {
-                var result = await _TicketRepository.GetCountByStatusAsync();
-                return Ok(result);
-
-            }
-            catch (Exception)
-            {
-                return BadRequest();
-            }
+            var result = await _TicketService.GetCountByStatusAsync();
+            return Ok(result);
         }
 
         [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(Guid id)
         {
-            try
-            {
-                var userId = User.FindFirst("id")?.Value;
-                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userId = (Guid)HttpContext.Items["UserId"];
 
-                var ticket = await _TicketRepository.GetByIdAsync(id);
-                if (ticket == null) return NotFound();
+            var ticket = await _TicketService.GetByIdAsync(id);
+            if (ticket == null) return NotFound();
 
-                // Restrict get for creator and assigned admin
-                if (!(ticket.CreatedByUserId.ToString() == userId ||
-                    (ticket.AssignedToUserId.ToString() == userId && userRole == "Admin")))
-                    return Forbid();
+            // Restrict get for creator and assigned admin
+            if (!(ticket.CreatedByUserId == userId ||
+                (ticket.AssignedToUserId == userId && HttpContext.Items["UserRole"] == "Admin")))
+                return Forbid();
 
-                return Ok(ticket);
-            }
-            catch (Exception)
-            {
-                return BadRequest();
-            }
+            return Ok(ticket);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            try
-            {                
-                //physical delete
-                var result = _TicketRepository.DeleteAsync(id);
-                if (result == null) return NotFound();
+            //physical delete
+            var result = _TicketService.DeleteAsync(id);
+            if (result == null) return NotFound();
 
-                return Ok("Ticket Deleted Successfully.");
-            }
-            catch (Exception)
-            {
-                return BadRequest();
-            }
-
+            return Ok("Ticket Deleted Successfully.");
         }
     }
 }

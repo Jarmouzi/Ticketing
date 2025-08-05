@@ -1,18 +1,21 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Ticketing.API.Service;
 using SQLitePCL;
 using Microsoft.OpenApi.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Ticketing.Application.Mapping;
+using Ticketing.Application;
+using Ticketing.API.Middlewares;
+
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddAutoMapper(cfg => { }, typeof(TicketProfile).Assembly);
 Batteries.Init();
 
 builder.Services.AddAppServices(builder.Configuration.GetConnectionString("DefaultConnection"));
 
 builder.Services.AddControllers(); 
-builder.Services.AddScoped<JwtService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opts => {
         opts.TokenValidationParameters = new TokenValidationParameters
@@ -29,7 +32,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -72,6 +75,9 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<UserContextMiddleware>();
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.MapControllers();
 
