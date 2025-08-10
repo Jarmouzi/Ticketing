@@ -8,16 +8,17 @@ using Ticketing.Domain.Entities;
 using Ticketing.Infrastructure.interfaces;
 using Ticketing.Domain.ValueObjects;
 using Ticketing.Application.Interfaces;
+using Microsoft.Extensions.Logging;
 
-namespace Ticketing.Application.Services
+namespace Ticketing.Application.Services.Auth
 {
-    public class AuthService : IAuthService
+    public class AuthService : BaseService, IAuthService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAuthRepository _authRepository;
         private readonly IJWTService _JWTService;
 
-        public AuthService(IAuthRepository authRepository, IUnitOfWork unitOfWork, IJWTService jWTService)
+        public AuthService(IAuthRepository authRepository, IUnitOfWork unitOfWork, IJWTService jWTService, ILogger<TicketService> logger) : base(logger)
         {
             _authRepository = authRepository;
             _unitOfWork = unitOfWork;

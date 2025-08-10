@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Ticketing.Application.Interfaces;
 using Ticketing.Application.Services;
+using Ticketing.Application.Services.Auth;
 using Ticketing.Domain.ValueObjects;
 using Ticketing.Infrastructure.interfaces;
 using Ticketing.Infrastructure.Persistence;

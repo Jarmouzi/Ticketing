@@ -6,58 +6,135 @@ using Ticketing.Infrastructure.interfaces;
 using Ticketing.Domain.ValueObjects;
 using AutoMapper;
 using System.Net.Sockets;
+using Microsoft.Extensions.Logging;
+using System.Security.Claims;
+using Ticketing.Core.Results;
+using System;
+using Ticketing.Application.Services.Auth;
+using Microsoft.AspNetCore.Http;
 
 namespace Ticketing.Application.Services
 {
-    public class TicketService : ITicketService
+    public class TicketService : BaseService, ITicketService
     {
         private readonly ITicketRepository _ticketRepository;
+        private readonly IAuthRepository _authRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public TicketService(ITicketRepository ticketRepository, IUnitOfWork unitOfWork, IMapper mapper)
+        public TicketService(
+            ITicketRepository ticketRepository,
+            IAuthRepository authRepository,
+            IUnitOfWork unitOfWork, 
+            IMapper mapper, 
+            ILogger<TicketService> logger) : base(logger)
         {
             _ticketRepository = ticketRepository;
+            _authRepository = authRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
 
-        public async Task<TicketDto> CreateTicketAsync(TicketCreateDto dto, Guid userId)
+        public async Task<ServiceResult<TicketDto>> CreateAsync(TicketCreateDto dto, ClaimsPrincipal user)
         {
             try
             {
-                var model = _mapper.Map<Ticket>(dto);
-                model.CreatedByUserId = userId;
-                var result = await _ticketRepository.AddAsync(model);
-                await _unitOfWork.SaveAsync();
+                if(user.UserId() == null)
+                    return ServiceResult<TicketDto>.Unauthorized("you must login first!");
 
-                return _mapper.Map<TicketDto>(result);
+                if(!user.IsEmployee())
+                    return ServiceResult<TicketDto>.Forbidden("Only employees can create tickets!");
+
+                var model = _mapper.Map<Ticket>(dto);
+                model.CreatedByUserId = user.UserId().Value;
+                var result = await _ticketRepository.AddAsync(model);
+
+                await _unitOfWork.SaveAsync();
+                
+                var ticket =_mapper.Map<TicketDto>(result);
+
+                return ServiceResult<TicketDto>.Success(ticket); 
             }
             catch (Exception ex)
             {
-                throw ex;
+                _logger.LogError($"Error acurred on TicketService_CreateAsync: {ex.Message} {ex.InnerException?.Message ?? ""}", new object[] { dto, user });
 
+                return ServiceResult<TicketDto>.Error("Something went wrong, Please contact your Admin or try again later.");
             }
         }
 
-        public async Task<TicketDto?> UpdateStatusAsync(Guid ticketId, TicketUpdateDto dto)
+        public async Task<ServiceResult<TicketDto>> UpdateAsync(Guid id, TicketUpdateDto dto, ClaimsPrincipal user)
         {
             try
             {
-                var ticket = await _ticketRepository.GetByIdAsync(ticketId);
+                if (user.UserId() == null)
+                    return ServiceResult<TicketDto>.Unauthorized("you must login first!");
+
+                if (!user.IsAdmin())
+                    return ServiceResult<TicketDto>.Forbidden("Only Admins can update tickets!");
+
+
+                var assignedUser = await _authRepository.GetUserAsync(dto.AssignedToUserId);
+
+                if (assignedUser == null)
+                    return ServiceResult<TicketDto>.NotFound("Assigned User is not found!");
+
+                if (assignedUser.Role != UserRole.Admin)
+                    return ServiceResult<TicketDto>.Unauthorized("Assigned User is not admin! Tickets should only assigned to admins." );
+
+                var ticket = await _ticketRepository.GetByIdAsync(id);
                 if (ticket == null)
-                    return null;
+                    return ServiceResult<TicketDto>.NotFound("Ticket is not found!");
 
                 ticket.Status = dto.Status;
                 ticket.AssignedToUserId = dto.AssignedToUserId;
 
                 await _unitOfWork.SaveAsync();
 
-                return _mapper.Map<TicketDto>(ticket);
+                var result =_mapper.Map<TicketDto>(ticket);
+
+                return ServiceResult<TicketDto>.Success(result); 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                _logger.LogError($"Error acurred on TicketService_UpdateAsync: {ex.Message} {ex.InnerException?.Message ?? ""}", new object[] { id, user });
+
+                return ServiceResult<TicketDto>.Error("Something went wrong, Please contact your Admin or try again later.");
+            }
+        }
+        /// <summary>
+        /// physical delete
+        /// </summary>
+        /// <param name="id">Ticket Id</param>
+        /// <param name="user">Current user</param>
+        /// <returns></returns>
+        public async Task<ServiceResult<Guid>> DeleteAsync(Guid id, ClaimsPrincipal user)
+        {
+            var result = id;
+            try
+            {
+                if (user.UserId() == null)
+                    return ServiceResult<Guid>.Unauthorized("you must login first!");
+
+                if (!user.IsAdmin())
+                    return ServiceResult<Guid>.Forbidden("Only Admins can delete tickets!");
+
+
+                var item = await _ticketRepository.DeleteAsync(id);
+                if (item != null)
+                {
+                    if (await _unitOfWork.SaveAsync() > 0)
+                    {
+                        return ServiceResult<Guid>.Success(result);
+                    }
+                }
+                return ServiceResult<Guid>.NotFound("Ticket is not found!");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error acurred on TicketService_DeleteAsync: {ex.Message} {ex.InnerException?.Message ?? ""}", new object[] { id, user });
+
+                return ServiceResult<Guid>.Error("Something went wrong, Please contact your Admin or try again later.");
             }
         }
 
@@ -66,66 +143,72 @@ namespace Ticketing.Application.Services
         /// </summary>
         /// <param name="id"> Id of Ticket to delete </param>
         /// <returns></returns>
-        public async Task<Guid?> DeleteAsync(Guid id)
-        {
-            var result = id;
-            try
-            {
-                var item = await _ticketRepository.DeleteAsync(id);
-                if (item != null)
-                {
-                    if (await _unitOfWork.SaveAsync() > 0)
-                    {
-                        return result;
-                    }
-                }
-                return null;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-        public async Task<TicketDto?> GetByIdAsync(Guid id)
+        public async Task<ServiceResult<TicketDto>> GetByIdAsync(Guid id, ClaimsPrincipal user)
         {
             try
             {
                 var ticket = await _ticketRepository.GetByIdAsync(id);
-                return _mapper.Map<TicketDto>(ticket) ?? null;
+                if (ticket == null)
+                    return ServiceResult<TicketDto>.NotFound("Ticket is not found!");
+
+                if (!user.IsTicketAssigned(ticket))
+                    return ServiceResult<TicketDto>.Forbidden("Access denied! Only the ticket creator or assigned admin can access the ticket");
+
+                var dto = _mapper.Map<TicketDto>(ticket);
+
+                return ServiceResult<TicketDto>.Success(dto);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                _logger.LogError($"Error acurred on TicketService_GetByIdAsync: {ex.Message} {ex.InnerException?.Message ?? ""}", new object[] { id, user });
+
+                return ServiceResult<TicketDto>.Error("Something went wrong, Please contact your Admin or try again later.");
             }
         }
 
-        public async Task<IEnumerable<TicketDto>> GetAllTicketsAsync()
+        public async Task<ServiceResult<IEnumerable<TicketDto>>> GetAllTicketsAsync(ClaimsPrincipal user)
         {
             try
             {
+                if (user.UserId() == null)
+                    return ServiceResult<IEnumerable<TicketDto>>.Unauthorized("you must login first!");
+
+                if (!user.IsAdmin())
+                    return ServiceResult<IEnumerable<TicketDto>>.Forbidden("Only admins can get all tickets!");
+
                 var tickets = await _ticketRepository.GetAllAsync();
-                return _mapper.Map<List<TicketDto>>(tickets);
+                return ServiceResult<IEnumerable<TicketDto>>.Success(_mapper.Map<List<TicketDto>>(tickets));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                _logger.LogError($"Error acurred on TicketService_GetAllTicketsAsync: {ex.Message} {ex.InnerException?.Message ?? ""}", new object[] {  user });
+
+                return ServiceResult<IEnumerable<TicketDto>>.Error("Something went wrong, Please contact your Admin or try again later.");
             }
         }
 
-        public async Task<IEnumerable<TicketDto>> GetTicketsByUserAsync(Guid userId)
+        public async Task<ServiceResult<IEnumerable<TicketDto>>> GetTicketsByUserAsync(ClaimsPrincipal user)
         {
             try
             {
-                var tickets = await _ticketRepository.GetAllAsync(m => m.CreatedByUserId == userId);
-                return _mapper.Map<List<TicketDto>>(tickets);
+                if (user.UserId() == null)
+                    return ServiceResult<IEnumerable<TicketDto>>.Unauthorized("you must login first!");
+
+                if (!user.IsEmployee())
+                    return ServiceResult<IEnumerable<TicketDto>>.Forbidden("Only employees can get their tickets!");
+
+                var tickets = await _ticketRepository.GetAllAsync(m => m.CreatedByUserId == user.UserId());
+                return ServiceResult<IEnumerable<TicketDto>>.Success(_mapper.Map<List<TicketDto>>(tickets));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                _logger.LogError($"Error acurred on TicketService_GetTicketsByUserAsync: {ex.Message} {ex.InnerException?.Message ?? ""}", new object[] {  user });
+
+                return ServiceResult<IEnumerable<TicketDto>>.Error("Something went wrong, Please contact your Admin or try again later.");
             }
         }
 
-        public async Task<List<TicketStatusDto>> GetCountByStatusAsync()
+        public async Task<ServiceResult<IEnumerable<TicketStatusDto>>> GetCountByStatusAsync(ClaimsPrincipal user)
         {
             try
             {
@@ -137,13 +220,15 @@ namespace Ticketing.Application.Services
                         Status = kvp.Key.ToString(),
                         Count = kvp.Value
                     })
-                    .ToList();
+                    .AsEnumerable();
 
-                return result;
+                return ServiceResult<IEnumerable<TicketStatusDto>>.Success(result);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                _logger.LogError($"Error acurred on TicketService_GetCountByStatusAsync: {ex.Message} {ex.InnerException?.Message ?? ""}", new object[] { user });
+
+                return ServiceResult<IEnumerable<TicketStatusDto>>.Error("Something went wrong, Please contact your Admin or try again later.");
             }
         }
     }
