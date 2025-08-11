@@ -1,6 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using Ticketing.Domain.Entities;
 using Ticketing.Domain.ValueObjects;

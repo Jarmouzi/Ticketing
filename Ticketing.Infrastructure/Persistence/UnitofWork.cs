@@ -1,14 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Ticketing.Domain.Entities;
-using Ticketing.Domain.ValueObjects;
 using Ticketing.Infrastructure.interfaces;
-using Ticketing.Infrastructure.Repositories;
 
 namespace Ticketing.Infrastructure.Persistence
 {

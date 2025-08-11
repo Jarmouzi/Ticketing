@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity.Data;
-using Microsoft.AspNetCore.Mvc;
-using System.Net;
+﻿using Microsoft.AspNetCore.Mvc;
 using Ticketing.Application.DTOs;
 using Ticketing.Application.Interfaces;
 

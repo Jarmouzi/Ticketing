@@ -1,12 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.VisualStudio.TestPlatform.TestHost;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using Moq;
-using Microsoft.Extensions.Logging;
-using Xunit;
 using FluentAssertions;
 
 namespace Ticketing.Test.Controllers

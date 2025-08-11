@@ -1,11 +1,7 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using System;
+﻿using Microsoft.EntityFrameworkCore;
 using Ticketing.Repository;
 using Ticketing.Infrastructure.interfaces;
 using Ticketing.Domain.Entities;
-using Ticketing.Domain.ValueObjects;
 
 public class AuthRepository : IAuthRepository
 {

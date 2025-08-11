@@ -5,13 +5,10 @@ using Ticketing.Repository;
 using Ticketing.Infrastructure.interfaces;
 using Ticketing.Domain.ValueObjects;
 using AutoMapper;
-using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
-using Ticketing.Core.Results;
-using System;
+using Ticketing.Common.Results;
 using Ticketing.Application.Services.Auth;
-using Microsoft.AspNetCore.Http;
 
 namespace Ticketing.Application.Services
 {

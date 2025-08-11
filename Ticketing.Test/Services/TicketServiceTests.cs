@@ -1,14 +1,12 @@
 ﻿using AutoMapper;
-using Castle.Core.Logging;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Ticketing.Application.Services;
-using Ticketing.Core.Results;
+using Ticketing.Common.Results;
 using Ticketing.Domain.Entities;
 using Ticketing.Infrastructure.interfaces;
 using Ticketing.Repository;
 using Ticketing.Test.TestData;
-using Xunit;
 using FluentAssertions;
 
 namespace Ticketing.Test;

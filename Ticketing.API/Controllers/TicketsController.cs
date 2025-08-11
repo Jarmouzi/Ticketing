@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using Ticketing.Application.DTOs;
 using Ticketing.Application.Interfaces;
-using Ticketing.Core.Results;
-using Ticketing.Domain.ValueObjects;
-using Ticketing.Repository;
+using Ticketing.Common.Results;
 
 namespace Ticketing.API.Controllers
 {

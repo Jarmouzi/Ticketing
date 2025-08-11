@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Security.Claims;
 using Ticketing.Application.DTOs;
-using Ticketing.Core.Results;
+using Ticketing.Common.Results;
 
 namespace Ticketing.Application.Interfaces
 {

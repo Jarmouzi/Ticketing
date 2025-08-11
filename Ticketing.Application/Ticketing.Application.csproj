@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Ticketing.Common\Ticketing.Common.csproj" />
     <ProjectReference Include="..\Ticketing.Core\Ticketing.Common.csproj" />
     <ProjectReference Include="..\Ticketing.Domain\Ticketing.Domain.csproj" />
     <ProjectReference Include="..\Ticketing.Infrastructure\Ticketing.Infrastructure.csproj" />
