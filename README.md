@@ -1,21 +1,42 @@
-**✅ Offline Ticketing System API for an Organizationt**
+# 🎟️ Ticketing System API
 
-You can run the project within the Visual Studio environment and test it using Swagger.
+A simplified offline ticketing Web API for organizational use. Built with ASP.NET Core, this project demonstrates role-based access control, user management, and ticket operations.
 
-At the first build of the project, the Ticketing.API.Service.SeedDataAsync method seeds 4 sample users.
-This seeding code is commented out at line 37 of Ticketing.API.Program.cs.
+## 🚀 Features
 
-Seeded Users:
+- Role-based access control using enums
+- Modular architecture with clear separation of concerns
+- Swagger integration for API testing
 
-{ "FullName": "First Admin", "Email": "admin@example.com", "Password": "string", "Role": "Admin" }
-{ "FullName": "Second Admin", "Email": "admin2@example.com", "Password": "string", "Role": "Admin" }
-{ "FullName": "First Employee", "Email": "employee@example.com", "Password": "string", "Role": "Employee" }
-{ "FullName": "Second Employee", "Email": "employee2@example.com", "Password": "string", "Role": "Employee" }
+## 🧱 Project Structure
 
-Normally, I manage role accessibility through two tables: one that records role permissions for actions, 
-and another that records role permissions for data access. A custom authorization attribute enforces these 
-permissions for roles and users.
+- `Ticketing.API` – Main API project
+- `Ticketing.Model` – Domain models
+- `Ticketing.DTO` – Data transfer objects
+- `Ticketing.Repository` – Data access layer
+- `Ticketing.Service` – Business logic
+- `Ticketing.ViewModel` – View models for UI/API responses
+- `Ticketing.AutoMapper` – Mapping configurations
+- `Ticketing.DataContext` – EF Core DbContext and migrations
 
-In this project, I encountered a specific scenario requiring role declaration using enums. Therefore, 
-I opted for a hardcoded access control approach based on enums. This approach can be suitable for small projects, 
-as it simplifies implementation while reducing potential security vulnerabilities.
+## 👥 Seeded Users
+
+To test the API, four users are seeded on first build (commented out in `Program.cs`, line 37):
+
+| Full Name        | Email                | Role     | Password |
+|------------------|----------------------|----------|----------|
+| First Admin      | admin@example.com    | Admin    | string   |
+| Second Admin     | admin2@example.com   | Admin    | string   |
+| First Employee   | employee@example.com | Employee | string   |
+| Second Employee  | employee2@example.com| Employee | string   |
+
+## 🔐 Authorization
+
+Role-based access is enforced via enums and a custom authorization attribute. While hardcoded access control is used here for simplicity, it’s suitable for small-scale applications and reduces complexity.
+
+## 🛠️ Getting Started
+
+1. Clone the repo:
+   ```bash
+   git clone https://github.com/jarmouzi/Ticketing.git
+
